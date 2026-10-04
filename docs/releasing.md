@@ -15,7 +15,7 @@ swift package resolve
 
 Commit only the resulting `SUPublicEDKey`. Export the seed with `generate_keys --account com.rvrhiv.OrbitShift.release -x PATH_OUTSIDE_REPOSITORY` when provisioning CI, store it as the environment secret, and remove the temporary export. The signing script verifies that the private key matches the public key before signing. Do not regenerate or replace a published channel's key without an update migration plan.
 
-**Apple signing is separate.** Version 0.1.0 uses ad-hoc code signing and is not notarized. Its download instructions disclose the first-launch macOS confirmation. Developer ID signing and notarization are not configured in this workflow; Sparkle signatures do not replace them. Keep Gatekeeper enabled.
+**Apple signing is separate.** Distribution builds currently use ad-hoc code signing and are not notarized. Their download instructions disclose the first-launch macOS confirmation. Developer ID signing and notarization are not configured in this workflow; Sparkle signatures do not replace them. Keep Gatekeeper enabled.
 
 ## Publish a version
 

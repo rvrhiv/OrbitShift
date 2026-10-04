@@ -19,7 +19,7 @@ Switch input languages on your Mac with a single **Fn / Globe** key press. Orbit
 - **One key, your choice.** Use Fn / Globe, a left or right modifier, or F13–F19.
 - **Your own language order.** Keep two layouts or build a longer cycle; rearrange them with the arrow buttons.
 - **Keep your shortcuts.** Fn + Delete and other modifier combinations do not trigger a language switch.
-- **Follow macOS.** Changing the input source in the system menu updates OrbitShift too.
+- **See the current layout.** A compact country flag in the menu bar follows the active macOS input source, including changes made in the system menu. Choose a layout directly from the flag menu; the current one has a checkmark. Sources without a country use a globe.
 - **Stay in the menu bar.** Pause switching whenever you need to, and optionally launch at login.
 - **Keep typing private.** No typed text is recorded. Settings stay on your Mac; switching works offline.
 
@@ -31,7 +31,7 @@ The interface is available in English and Russian and follows your Mac's appeara
 2. Unzip it and move **OrbitShift.app** to **Applications**.
 3. Open OrbitShift. Its globe icon appears in the menu bar.
 
-**First release signing:** version 0.1.0 is not signed with Apple Developer ID or notarized by Apple. If macOS blocks an unidentified developer, first try opening the app, then use **System Settings → Privacy & Security → Open Anyway** if you trust this download. Follow [Apple's instructions](https://support.apple.com/en-us/102445); there is no need to disable Gatekeeper. Sparkle update signatures are separate from Apple's verification.
+**Apple signing:** current releases are not signed with Apple Developer ID or notarized by Apple. If macOS blocks an unidentified developer, first try opening the app, then use **System Settings → Privacy & Security → Open Anyway** if you trust this download. Follow [Apple's instructions](https://support.apple.com/en-us/102445); there is no need to disable Gatekeeper. Sparkle update signatures are separate from Apple's verification.
 
 If you used OrbitShift Dev, quit it before starting OrbitShift. The two apps have separate settings and permissions.
 

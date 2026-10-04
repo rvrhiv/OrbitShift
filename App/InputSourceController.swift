@@ -3,26 +3,29 @@ import Foundation
 import OrbitShiftCore
 
 @MainActor
-final class InputSourceController {
+final class InputSourceController: NSObject {
   var onChange: (() -> Void)?
-  private var observers: [NSObjectProtocol] = []
 
-  init() {
+  override init() {
+    super.init()
     for name in [
       kTISNotifySelectedKeyboardInputSourceChanged, kTISNotifyEnabledKeyboardInputSourcesChanged,
     ] {
-      let observer = DistributedNotificationCenter.default().addObserver(
-        forName: Notification.Name(name! as String), object: nil, queue: .main
-      ) { [weak self] _ in
-        MainActor.assumeIsolated { self?.onChange?() }
-      }
-      observers.append(observer)
+      // AppKit suspends ordinary distributed notifications while the app is inactive.
+      // A menu bar indicator must keep following the input source in the background.
+      DistributedNotificationCenter.default().addObserver(
+        self, selector: #selector(inputSourcesDidChange(_:)),
+        name: Notification.Name(name! as String), object: nil,
+        suspensionBehavior: .deliverImmediately)
     }
   }
 
+  @objc nonisolated private func inputSourcesDidChange(_ notification: Notification) {
+    DispatchQueue.main.async { [weak self] in self?.onChange?() }
+  }
+
   func stop() {
-    for observer in observers { DistributedNotificationCenter.default().removeObserver(observer) }
-    observers.removeAll()
+    DistributedNotificationCenter.default().removeObserver(self)
   }
 
   private func string(_ source: TISInputSource, _ key: CFString) -> String? {

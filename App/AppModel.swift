@@ -199,8 +199,18 @@ final class AppModel {
         currentID: current?.id,
         orderedIDs: preferences.sourceIDs, availableIDs: Set(available.map(\.id)))
     else { return }
+    selectSource(id: next)
+  }
+
+  func selectSource(id: String) {
+    if isDemo {
+      guard let source = availableSources.first(where: { $0.id == id }) else { return }
+      currentSource = source
+      onStatusChange?()
+      return
+    }
     do {
-      try inputs.select(id: next)
+      try inputs.select(id: id)
       errorMessage = nil
     } catch { errorMessage = error.localizedDescription }
     refreshSources()

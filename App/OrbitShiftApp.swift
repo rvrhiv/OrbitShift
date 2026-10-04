@@ -45,12 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
       }
       return
     }
-    let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    let image = NSImage(systemSymbolName: "globe", accessibilityDescription: AppIdentity.name)
-    image?.isTemplate = true
-    item.button?.image = image
-    item.button?.imagePosition = .imageLeading
-    if AppIdentity.isDevelopment { item.button?.title = " Dev" }
+    let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    item.button?.imagePosition = .imageOnly
     let menu = NSMenu()
     menu.delegate = self
     item.menu = menu
@@ -113,12 +109,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     guard let model else { return }
     model.refresh()
     menu.removeAllItems()
-    let heading = NSMenuItem(title: AppIdentity.name, action: nil, keyEquivalent: "")
-    heading.isEnabled = false
-    menu.addItem(heading)
-    let source =
-      model.currentSource?.name ?? localized("Источник неизвестен", "Unknown input source")
-    menu.addItem(NSMenuItem(title: source + " · " + model.status, action: nil, keyEquivalent: ""))
+    if model.availableSources.isEmpty {
+      menu.addItem(
+        NSMenuItem(
+          title: localized("Нет доступных источников ввода", "No input sources available"),
+          action: nil, keyEquivalent: ""))
+    }
+    for source in model.availableSources {
+      let entry = NSMenuItem(
+        title: source.name, action: #selector(selectSource(_:)), keyEquivalent: "")
+      entry.target = self
+      entry.representedObject = source.id
+      entry.image = InputSourceIndicator.image(for: source)
+      entry.state = source.id == model.currentSource?.id ? .on : .off
+      menu.addItem(entry)
+    }
     menu.addItem(.separator())
     add(menu, localized("Настройки…", "Settings…"), #selector(showSettings), key: ",")
     add(
@@ -137,9 +142,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
   }
 
   private func refreshStatus() {
+    let image = InputSourceIndicator.image(for: model.currentSource)
+    if item?.button?.image !== image { item?.button?.image = image }
+    item?.button?.setAccessibilityLabel(
+      "\(AppIdentity.name): \(model.currentSource?.name ?? localized("Источник неизвестен", "Unknown input source"))"
+    )
+    item?.button?.setAccessibilityValue(model.status)
     item?.button?.toolTip =
       "\(AppIdentity.name) · \(model.status) · \(model.currentSource?.name ?? "—")"
     item?.button?.appearsDisabled = model.preferences.isPaused || !model.handlerRunning
+    for entry in item?.menu?.items ?? [] {
+      guard let id = entry.representedObject as? String else { continue }
+      entry.state = id == model.currentSource?.id ? .on : .off
+    }
     guard !model.isDemo, !permissionGuideScheduled else { return }
     permissionGuideScheduled = true
     // Leave the monitor's reconcile callback before requesting OS permissions.
@@ -165,6 +180,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
       presentSettings(page: .system)
       model.requestInputMonitoring()
     }
+  }
+
+  @objc private func selectSource(_ sender: NSMenuItem) {
+    guard let id = sender.representedObject as? String else { return }
+    model.selectSource(id: id)
+    if model.errorMessage != nil { showSettings() }
   }
 
   @objc private func togglePause() { model.setPaused(!model.preferences.isPaused) }
