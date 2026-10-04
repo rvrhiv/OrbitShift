@@ -5,6 +5,7 @@ import base64
 import os
 from pathlib import Path
 import secrets
+import shlex
 import subprocess
 import tempfile
 
@@ -15,6 +16,7 @@ def security(*args):
     result = subprocess.run(["/usr/bin/security", *map(str, args)], capture_output=True)
     if result.returncode:
         raise RuntimeError(f"Keychain operation {args[0]} failed ({result.returncode}).")
+    return result.stdout.decode("utf-8")
 
 
 def main():
@@ -42,6 +44,11 @@ def main():
             archive.write_bytes(base64.b64decode(encoded, validate=True))
             security("import", archive, "-k", keychain, "-P", password, "-T", "/usr/bin/codesign")
         security("set-key-partition-list", "-S", "apple-tool:,apple:,codesign:", "-s", "-k", keychain_password, keychain)
+        # --keychain narrows identity lookup, but codesign still uses the user's
+        # search list for the certificate chain. A clean runner has no login copy.
+        search_list = shlex.split(security("list-keychains", "-d", "user"))
+        if str(keychain) not in search_list:
+            security("list-keychains", "-d", "user", "-s", *search_list, keychain)
         os.environ["ORBITSHIFT_SIGNING_IDENTITY"] = signer
         os.environ["ORBITSHIFT_SIGNING_KEYCHAIN"] = str(keychain)
         signing_options("distribution")
