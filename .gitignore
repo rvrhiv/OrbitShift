@@ -23,3 +23,8 @@ dist/
 *.p8
 *.mobileprovision
 *.provisionprofile
+
+# Local development version counters and Python tooling
+.local-builds/
+__pycache__/
+*.pyc

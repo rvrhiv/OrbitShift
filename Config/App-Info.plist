@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>OrbitShift</string>
+  <key>CFBundleDisplayName</key><string>OrbitShift</string>
+  <key>CFBundleIdentifier</key><string>com.rvrhiv.OrbitShift</string>
+  <key>CFBundleExecutable</key><string>OrbitShift</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleIconFile</key><string>OrbitShift</string>
+  <key>LSMinimumSystemVersion</key><string>14.0</string>
+  <key>LSUIElement</key><true/>
+  <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>ru</string></array>
+  <key>OrbitShiftBuildFlavor</key><string>development</string>
+  <key>NSInputMonitoringUsageDescription</key><string>OrbitShift detects your switching key. It does not record typed text.</string>
+  <key>SUFeedURL</key><string>https://github.com/rvrhiv/OrbitShift/releases/latest/download/appcast.xml</string>
+  <key>SUPublicEDKey</key><string>K+9Dtbfo/sjqS+ZL6szx37AOWSQ3xLQnLGmCBG0Owxk=</string>
+  <key>SURequireSignedFeed</key><true/>
+  <key>SUVerifyUpdateBeforeExtraction</key><true/>
+  <key>SUEnableAutomaticChecks</key><true/>
+  <key>SUAllowsAutomaticUpdates</key><false/>
+  <key>SUAutomaticallyUpdate</key><false/>
+  <key>SUSendProfileInfo</key><false/>
+</dict></plist>

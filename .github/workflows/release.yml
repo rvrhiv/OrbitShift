@@ -1,0 +1,109 @@
+name: Release
+run-name: Release ${{ inputs.version }}
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version to release from current main (e.g. 0.7.0)'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: official-release
+  cancel-in-progress: false
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main' && github.repository == 'rvrhiv/OrbitShift'
+    runs-on: macos-15
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.prepare.outputs.version }}
+      build: ${{ steps.prepare.outputs.build }}
+      commit: ${{ steps.prepare.outputs.commit }}
+      previous_tag: ${{ steps.prepare.outputs.previous_tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Prepare version and freeze source commit
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: bash Scripts/prepare-release.sh "$RELEASE_VERSION"
+      - name: SwiftPM build and source checks
+        run: |
+          swift build
+          swift format lint --strict --recursive Package.swift App Sources Scripts/generate-icon.swift Scripts/verify-signing-key.swift
+          plutil -lint Config/App-Info.plist
+          for script in Scripts/*.sh; do bash -n "$script"; done
+      - name: Development application and signatures
+        run: bash Scripts/build-app.sh Release
+      - name: Distribution application and signatures
+        run: bash Scripts/build-app.sh Release distribution
+      - name: Package release
+        env:
+          RELEASE_VERSION: ${{ steps.prepare.outputs.version }}
+          RELEASE_BUILD: ${{ steps.prepare.outputs.build }}
+        run: bash Scripts/package-release.sh "$RELEASE_VERSION" "$RELEASE_BUILD"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-release
+          path: build/releases/
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.repository == 'rvrhiv/OrbitShift'
+    environment: release
+    runs-on: macos-15
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-release
+          path: build/releases/
+      - name: Generate release notes when not supplied
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.commit }}
+          PREVIOUS_TAG: ${{ needs.build.outputs.previous_tag }}
+        run: |
+          orbitshift_notes="build/releases/$RELEASE_VERSION/OrbitShift-$RELEASE_VERSION.md"
+          if [[ ! -f "$orbitshift_notes" ]]; then
+            orbitshift_arguments=(-f "tag_name=v$RELEASE_VERSION" -f "target_commitish=$RELEASE_COMMIT")
+            if [[ -n "$PREVIOUS_TAG" ]]; then
+              orbitshift_arguments+=(-f "previous_tag_name=$PREVIOUS_TAG")
+            fi
+            orbitshift_body="$(gh api --method POST repos/rvrhiv/OrbitShift/releases/generate-notes \
+              "${orbitshift_arguments[@]}" --jq '.body | select(type == "string")')"
+            printf '# OrbitShift %s\n\nSource: [%s](https://github.com/rvrhiv/OrbitShift/commit/%s).\n\n%s\n' \
+              "$RELEASE_VERSION" "${RELEASE_COMMIT:0:7}" "$RELEASE_COMMIT" "$orbitshift_body" > "$orbitshift_notes"
+          fi
+          [[ -s "$orbitshift_notes" ]]
+      - name: Resolve pinned Sparkle tools
+        run: swift package resolve
+      - name: Sign and verify
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_BUILD: ${{ needs.build.outputs.build }}
+        run: bash Scripts/sign-release.sh "$RELEASE_VERSION" "$RELEASE_BUILD"
+      - name: Publish verified assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          RELEASE_BUILD: ${{ needs.build.outputs.build }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.commit }}
+        run: bash Scripts/publish-release.sh "$RELEASE_VERSION" "$RELEASE_BUILD" "$RELEASE_COMMIT"
