@@ -11,7 +11,13 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def run(*args):
-    return subprocess.run([str(arg) for arg in args], check=True, capture_output=True, text=True)
+    result = subprocess.run([str(arg) for arg in args], capture_output=True, text=True)
+    if result.returncode:
+        # These operations only use public certificates, fingerprints and paths.
+        # Password-bearing Keychain commands have separate redacted wrappers.
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"{Path(args[0]).name} failed ({result.returncode}): {detail}")
+    return result
 
 
 def certificate_path(flavor):
