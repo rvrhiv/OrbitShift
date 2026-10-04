@@ -17,6 +17,7 @@ env:
 jobs:
   build:
     if: github.ref == 'refs/heads/main' && github.repository == 'rvrhiv/OrbitShift'
+    environment: release
     runs-on: macos-15
     timeout-minutes: 30
     outputs:
@@ -41,6 +42,11 @@ jobs:
           swift format lint --strict --recursive Package.swift App Sources Scripts/generate-icon.swift Scripts/verify-signing-key.swift
           plutil -lint Config/App-Info.plist
           for script in Scripts/*.sh; do bash -n "$script"; done
+      - name: Import persistent code-signing identity
+        env:
+          ORBITSHIFT_CERTIFICATE_P12: ${{ secrets.ORBITSHIFT_CERTIFICATE_P12 }}
+          ORBITSHIFT_CERTIFICATE_PASSWORD: ${{ secrets.ORBITSHIFT_CERTIFICATE_PASSWORD }}
+        run: python3 Scripts/import-code-signing.py
       - name: Development application and signatures
         run: bash Scripts/build-app.sh Release
       - name: Distribution application and signatures
@@ -50,9 +56,16 @@ jobs:
           RELEASE_VERSION: ${{ steps.prepare.outputs.version }}
           RELEASE_BUILD: ${{ steps.prepare.outputs.build }}
         run: bash Scripts/package-release.sh "$RELEASE_VERSION" "$RELEASE_BUILD"
+      - name: Remove temporary signing keychain
+        if: always()
+        run: |
+          orbitshift_keychain="$RUNNER_TEMP/OrbitShift-release.keychain-db"
+          if [[ -f "$orbitshift_keychain" ]]; then
+            security delete-keychain "$orbitshift_keychain"
+          fi
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: unsigned-release
+          name: code-signed-release
           path: build/releases/
           if-no-files-found: error
           retention-days: 7
@@ -71,7 +84,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: unsigned-release
+          name: code-signed-release
           path: build/releases/
       - name: Generate release notes when not supplied
         env:

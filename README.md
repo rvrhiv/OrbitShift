@@ -84,7 +84,7 @@ Printable keys, Caps Lock and media keys are not offered. Fn event availability 
 
 **The app is missing from Accessibility.** Click **Allow…** in OrbitShift's **System** page to trigger the native request. If needed, add the app with **+** in macOS; **Show app in Finder** locates the correct copy.
 
-**Access stopped working after replacing the app.** This can happen with ad-hoc-signed builds even when the old permission switch looks enabled. Remove the old entry with **−**, add the current app with **+**, and enable it again.
+**Access stopped working after upgrading from 0.1.0 or 0.1.1.** These versions used ad-hoc signing. Moving to the persistent certificate requires one new Accessibility grant: remove the old entry with **−**, add the current app with **+**, and enable it again. Later builds using the same certificate retain this permission. Production and Dev use separate identities and grants.
 
 **A language is missing.** Add it in macOS Keyboard settings, then include it in OrbitShift's cycle. Temporarily unavailable sources are skipped without changing your saved order.
 
@@ -101,10 +101,13 @@ Requires macOS 14+ and Xcode with Swift 6.0+. SwiftPM downloads the pinned Spark
 ```sh
 git clone https://github.com/rvrhiv/OrbitShift.git
 cd OrbitShift
+python3 Scripts/setup-signing.py
 bash Scripts/build-app.sh Release
 open 'build/OrbitShift Dev.app'
 ```
 
 Local builds are named **OrbitShift Dev** and display versions such as **0.1.0-dev.1**. Each successful build replaces the previous packaged Dev app; a failed build keeps the old one. Quit the running Dev app before rebuilding. Dev settings are separate, and official updates cannot replace a Dev build.
+
+Signing setup runs once and reuses the same private key in your login Keychain. Keep that key and `.local-builds/Development-Certificate.pem` so macOS can recognize subsequent Dev builds. No Apple Developer subscription is required.
 
 [Contributing and diagnostics](CONTRIBUTING.md) · [Release workflow](docs/releasing.md)

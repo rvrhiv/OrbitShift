@@ -12,6 +12,8 @@ import signal
 import subprocess
 import tempfile
 
+from code_signing import sign, signing_options
+
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build"
 STATE = ROOT / ".local-builds"
@@ -72,6 +74,7 @@ def main():
     development = args.flavor == "development"
     if not development and args.configuration != "Release":
         parser.error("Distribution builds require Release.")
+    signer, signing_arguments = signing_options(args.flavor)
     name = "OrbitShift Dev" if development else "OrbitShift"
     bundle_id = "com.rvrhiv.OrbitShift.dev" if development else "com.rvrhiv.OrbitShift"
     app = BUILD / (name + ".app")
@@ -154,8 +157,7 @@ def main():
         for rpath in set(rpaths):
             if rpath.startswith(str(ROOT)):
                 run("/usr/bin/install_name_tool", "-delete_rpath", rpath, executable)
-        run("/usr/bin/codesign", "--force", "--sign", "-", staged)
-        run("/usr/bin/codesign", "--verify", "--deep", "--strict", staged)
+        sign(staged, args.flavor, signer, signing_arguments, app if old else None)
         validate_app(staged, name, bundle_id, args.flavor)
         next_counter = staging / "next-counter"
         if development:

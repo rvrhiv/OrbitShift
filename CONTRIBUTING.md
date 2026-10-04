@@ -9,6 +9,7 @@ swift build
 swift format lint --strict --recursive Package.swift App Sources Scripts/generate-icon.swift Scripts/verify-signing-key.swift
 plutil -lint Config/App-Info.plist
 for script in Scripts/*.sh; do bash -n "$script"; done
+python3 Scripts/setup-signing.py
 bash Scripts/build-app.sh Release
 open 'build/OrbitShift Dev.app'
 ```
@@ -19,7 +20,9 @@ Both Debug and Release default to the development flavor: **OrbitShift Dev**, bu
 
 The packaging script keeps one Dev app in `build/`. It compiles, packages and verifies the next app before replacing the previous one. Failed builds preserve the old app. Quit a running copy first. Incremental SwiftPM caches are reused; unrelated applications are not removed.
 
-Local apps are signed ad hoc. Rebuilding can invalidate macOS permissions; remove the stale permission entry and add the current app again if needed. Do not disable system security to work around this.
+Local apps use a persistent self-signed certificate. `setup-signing.py` creates it once in your login Keychain, or reuses it, and pins its public certificate in `.local-builds/Development-Certificate.pem`. Do not delete the private key or replace the certificate between builds. The build fails when the expected identity is unavailable; it never falls back to ad-hoc signing. Back up the identity as an encrypted PKCS#12 file outside the repository.
+
+The first migration from the old ad-hoc signature requires a new Accessibility grant. Afterwards, builds signed with the same certificate preserve the grant. This does not require an Apple Developer subscription, installing a trusted root, changing TCC data, or disabling Gatekeeper. Moving to another Mac or rotating/loss of the signing key requires a new grant.
 
 ## Code map
 
@@ -33,6 +36,7 @@ Local apps are signed ad hoc. Rebuilding can invalidate macOS permissions; remov
 | `App/SettingsView.swift` | English/Russian interface and isolated preview |
 | `App/UpdateController.swift`, `App/UpdateUserDriver.swift` | Sparkle checks, signature policy and explicit installation consent |
 | `Scripts/build_app.py` | Packaging, Dev version counter and safe app replacement |
+| `Scripts/code_signing.py`, `Scripts/setup-signing.py` | Stable channel certificates and signature verification |
 
 ## Behavior to preserve
 
@@ -63,6 +67,8 @@ For a rendered UI preview:
 ## Manual checks
 
 Verify physical Fn/Globe, Fn + Delete/arrows/media, the selected left/right modifier, fast typing, external source changes and source reordering. Check that the macOS indicator and actual typed text agree in an editor and browser. Also check permission recovery, pause/resume, sleep, keyboard reconnects and login-item behavior when changing those paths.
+
+When changing signing, grant Accessibility to a packaged build, quit it, change and rebuild it, then reopen the same app path. Confirm that System reports access and an active handler without opening macOS permission settings, and check physical Fn again. Compare `codesign -d -r-` for both builds: the designated requirement must still contain the same bundle identifier and certificate fingerprint, while the version and code hash change.
 
 Composition input methods and keyboards that do not emit Fn events need separate hardware validation. A successful API call or a screenshot does not establish support.
 

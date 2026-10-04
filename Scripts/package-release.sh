@@ -29,7 +29,7 @@ if [[ -e "$orbitshift_root/docs/releases/$orbitshift_version.md" && ! -s "$orbit
   echo 'Supplied release notes must not be empty.' >&2
   exit 1
 fi
-/usr/bin/codesign --verify --deep --strict "$orbitshift_app"
+/usr/bin/python3 "$orbitshift_root/Scripts/code_signing.py" "$orbitshift_app" distribution
 for orbitshift_binary in "$orbitshift_app/Contents/MacOS/OrbitShift" "$orbitshift_app/Contents/Frameworks/Sparkle.framework/Sparkle"; do
   /usr/bin/lipo "$orbitshift_binary" -verify_arch arm64 x86_64
 done

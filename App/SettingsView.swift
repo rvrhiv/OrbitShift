@@ -344,16 +344,14 @@ struct SettingsView: View {
               "Choose “Allow…”, open settings from the macOS prompt, and turn on the switch next to “\(AppIdentity.name).app”. Path: Privacy & Security → Accessibility. If the app is missing, use + to add it. OrbitShift will start keyboard handling after access is granted."
             ),
             icon: "hand.raised", tint: .orange)
-          if AppIdentity.isDevelopment {
-            Text(
-              localized(
-                "После новой dev-сборки переключатель может быть включён для старой версии. Если доступ не определяется, удалите OrbitShift Dev.app из списка кнопкой − и добавьте текущую копию кнопкой +.",
-                "After rebuilding, the enabled switch may belong to the previous version. If access is still missing, remove OrbitShift Dev.app with − and add the current copy with +."
-              )
+          Text(
+            localized(
+              "При переходе с версии со старой подписью доступ нужно выдать заново один раз. Если переключатель уже включён, а доступа нет, удалите старую запись кнопкой − и добавьте текущую копию кнопкой +. Следующие сборки с тем же сертификатом сохраняют разрешение.",
+              "When upgrading from the old signing method, grant access once more. If the switch is already on but access is missing, remove the old entry with − and add the current copy with +. Later builds signed with the same certificate keep the permission."
             )
-            .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(
-              horizontal: false, vertical: true)
-          }
+          )
+          .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(
+            horizontal: false, vertical: true)
           Button(localized("Показать приложение в Finder", "Show app in Finder")) {
             SystemSettings.revealApplication()
           }
